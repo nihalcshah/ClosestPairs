@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "*.js": "javascript",
+        "*.cpp": "cpp",
+        "utility": "cpp",
+        "tuple": "cpp",
+        "initializer_list": "cpp",
+        "list": "cpp",
+        "vector": "cpp",
+        "xiosbase": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp"
+    }
+}
