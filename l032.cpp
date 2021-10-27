@@ -10,9 +10,10 @@
 #include <iterator>
 #include "algorithm"
 #include "cstring"
+#include <chrono> 
 
 using namespace std;
-
+using namespace std::chrono;
 // class Point{
 //     public:
 //         double first;
@@ -140,8 +141,10 @@ class Lab03{
         list <pair<double,double>> k; 
         vector <pair<double,double>> v;
         string (*grid)[800] = new string[800][800];
-        pair<double,double> p1;
-        pair<double,double> p2;
+        tuple<double, pair<double, double>, pair<double, double>> brute;
+        tuple<double, pair<double, double>, pair<double, double>> merge;
+        int t1=0;
+        int t2=0;
     
     void init(){
         for(int i =0; i<800;i++){
@@ -208,11 +211,17 @@ class Lab03{
             ofs << "\n";
         }
         ofs.close();
+        // ofs.open("output.txt");
+        // ofs<<fixed<<setprecision(23)<<"("<< get<1>(brute).first <<", "<< get<1>(brute).second<<") "<<"("<<get<2>(brute).first<<", "<< get<2>(brute).second<<") Dist: "<< get<0>(brute) <<endl;
+        // ofs<<fixed<<setprecision(23)<<"("<< get<1>(merge).first <<", "<< get<1>(merge).second<<") "<<"("<<get<2>(merge).first<<", "<< get<2>(merge).second<<") Dist: "<< get<0>(merge) <<endl;
+        // ofs.close();
     }
 
     void closestbrute(){
 
         list <pair<double,double>>::iterator i;
+        pair<double,double> p1;
+        pair<double,double> p2;
         int counter = 1;
         double mindist = 3;
         for(i=k.begin(); i!=k.end(); i++){
@@ -231,6 +240,7 @@ class Lab03{
             }
             counter++;
         }
+        brute = make_tuple(mindist, p1, p2);
     }
 
     tuple<double, pair<double, double>, pair<double, double>> ms(int start, int end){
@@ -239,17 +249,23 @@ class Lab03{
         // }
         if(end-start==1){
             double d = distance(v[start].first, v[start].second, v[end].first, v[end].second);
+            // if(abs(v[start].first-0.1225)<=0.002 && v[start].first>0.1225){
+            //     cout<<"m"<<endl;
+            // }
             return make_tuple(d, v[start], v[end]);
         }
         if(end-start==2){
+            // if(abs(v[end].first-0.12)<=0.002){
+            //     cout<<"m"<<endl;
+            // }
             double d = distance(v[start].first, v[start].second, v[start+1].first, v[start+1].second);
             double d2 = distance(v[start].first, v[start].second, v[end].first, v[end].second);
             double d3 = distance(v[start+1].first, v[start+1].second, v[end].first, v[end].second);
             if(d3<d&&d3<d2){
-                return make_tuple(d, v[start+1], v[end]);
+                return make_tuple(d3, v[start+1], v[end]);
             }
             if(d2<d&&d2<d3){
-                return make_tuple(d, v[start], v[end]);
+                return make_tuple(d2, v[start], v[end]);
             }
             return make_tuple(d, v[start], v[start+1]);
         }
@@ -265,25 +281,31 @@ class Lab03{
             mind = get<0>(en);
             target = en;
         }
+        // if(abs(get<2>(target).first-0.1225)<=0.002){
+        //     cout<<get<2>(target).first<<endl;
+        // }
         double lthresh = v[mid].first-mind;
         double rthresh = v[mid].first+mind;
         int midindex;
-        for(midindex = mid;midindex>=0;midindex--){
+        for(midindex = mid;midindex>=start;midindex--){
             if(v[midindex].first<=lthresh){
                 break;
             }
         }
+        midindex++;
         int maxindex;
-        for(maxindex = mid;maxindex<v.size();maxindex++){
+        for(maxindex = mid;maxindex<=end;maxindex++){
             if(v[maxindex].first>=rthresh){
                 break;
             }
         }
+        maxindex--;
         for(int i = midindex; i <=mid; i++){
             for(int l = maxindex; l>mid; l--){
                 double dis = distance(v[l].first, v[l].second, v[i].first, v[i].second);
                 if(dis<mind){
                     target = make_tuple(dis, v[l], v[i]);
+                    mind = dis;
                 }
             }  
         }
@@ -291,36 +313,65 @@ class Lab03{
     }
 
     void part1(){
-        // init();
-        // genrand();
-        // readtext();
+        time_point<system_clock> start, end;
+        start = high_resolution_clock::now();
+        
         closestbrute();
         Draw d = Draw(grid);
-        grid = d.plotpoints(k, p1, p2);
+
+        end = high_resolution_clock::now();
+        auto elapsed = duration_cast<nanoseconds> (end-start);
+        t1+=elapsed.count();
+        // cout<< setprecision(17) << elapsed.count()  <<endl;
+        ofstream ofs;
+        ofs.open("output.txt", ios_base::app);
+        ofs<<fixed<<setprecision(23)<<"("<< get<1>(brute).first <<", "<< get<1>(brute).second<<") "<<"("<<get<2>(brute).first<<", "<< get<2>(brute).second<<") Dist: "<< get<0>(brute)<<" Time(nanoseconds): "<< elapsed.count() <<endl;
+        grid = d.plotpoints(k, get<1>(brute), get<2>(brute));
+        ofs.close();
     }
-    void part2(){
-        // init();
-        // genrand();
-        // readtext();
+    void part2(){   
+        time_point<system_clock> start, end;
+        start = high_resolution_clock::now();
+
         sort(v.begin(), v.end());
-        tuple<double, pair<double, double>, pair<double, double>> t = ms(0, v.size()-1);
-        p1 = get<1>(t);
-        p2 = get<2>(t);
+        merge = ms(0, v.size()-1);
+
+        end = high_resolution_clock::now();
+        auto elapsed = duration_cast<nanoseconds> (end-start);
+        t2+=elapsed.count();
+        // cout<< setprecision(17) << elapsed.count()  <<endl;
+
         Draw d = Draw(grid);
-        grid = d.plotpoints(k, p1, p2);
+        grid = d.plotpoints(k, get<1>(merge), get<2>(merge));\
+        ofstream ofs;
+        ofs.open("output.txt", ios_base::app);
+        ofs<<fixed<<setprecision(23)<<"("<< get<1>(merge).first <<", "<< get<1>(merge).second<<") "<<"("<<get<2>(merge).first<<", "<< get<2>(merge).second<<") Dist: "<< get<0>(merge)<<" Time(nanoseconds): "<< elapsed.count() <<endl;
+        ofs.close();
     }
 };
 
 int main(){
+    ofstream o;
+    o.open("output.txt");
+    o.clear();
+    o.close();
     srand(time(0)); 
     Lab03 l;
     l.init();
-    // l.genrand();
+    
     l.readtext();
+    using namespace std::chrono;
+    nanoseconds nan(1000);
+    nan = nan*60;
+    // l.genrand();
     l.part1();
-    cout<<"p1: ("<<l.p1.first<<", "<<l.p1.second<<") p2: ("<<l.p2.first<<", "<<l.p2.second<<")"<<endl;
     l.part2();
-    cout<<"p1: ("<<l.p1.first<<", "<<l.p1.second<<") p2: ("<<l.p2.first<<", "<<l.p2.second<<")"<<endl;
+    // cout<< setprecision(17) << elapsed.count()  <<endl;
+    // cout<< (double) (l.t1/3)<< endl;
+    // cout<< (double) (l.t2/3)<< endl;
+    // cout<<fixed<<setprecision(23)<<"("<< get<1>(l.brute).first <<", "<< get<1>(l.brute).second<<") "<<"("<<get<2>(l.brute).first<<", "<< get<2>(l.brute).second<<") Dist: "<< get<0>(l.brute)<<endl;
+    // cout<<fixed<<setprecision(23)<<"("<< get<1>(l.merge).first <<", "<< get<1>(l.merge).second<<") "<<"("<<get<2>(l.merge).first<<", "<< get<2>(l.merge).second<<") Dist: "<< get<0>(l.merge)<<endl;
+
     l.writearr();
-    // l.writetext();
+    l.writetext();
 }
