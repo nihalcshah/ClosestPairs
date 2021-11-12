@@ -16,6 +16,8 @@
         "iomanip": "cpp",
         "chrono": "cpp",
         "ratio": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "cmath": "cpp",
+        "fstream": "cpp"
     }
 }
